@@ -5,9 +5,9 @@ import { useLanguage } from '../contexts/LanguageContext'
 const Login: React.FC = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [error, setError] = useState<string | null>(null)
   const { signIn } = useAuth()
   const { language } = useLanguage()
-  const [error, setError] = useState<string | null>(null)
 
   const translations = {
     en: {
@@ -15,14 +15,16 @@ const Login: React.FC = () => {
       email: 'Email',
       password: 'Password',
       submit: 'Sign In',
-      error: 'Invalid email or password'
+      error: 'Invalid email or password',
+      genericError: 'An error occurred during sign in. Please try again.'
     },
     vn: {
       title: 'Đăng nhập',
       email: 'Email',
       password: 'Mật khẩu',
       submit: 'Đăng nhập',
-      error: 'Email hoặc mật khẩu không hợp lệ'
+      error: 'Email hoặc mật khẩu không hợp lệ',
+      genericError: 'Đã xảy ra lỗi trong quá trình đăng nhập. Vui lòng thử lại.'
     }
   }
 
@@ -35,7 +37,11 @@ const Login: React.FC = () => {
       await signIn(email, password)
     } catch (error) {
       console.error('Error signing in:', error)
-      setError(t.error)
+      if (error instanceof Error) {
+        setError(error.message || t.genericError)
+      } else {
+        setError(t.genericError)
+      }
     }
   }
 
@@ -85,7 +91,7 @@ const Login: React.FC = () => {
           </div>
 
           {error && (
-            <div className="text-red-500 text-sm">{error}</div>
+            <div className="text-red-500 text-sm text-center">{error}</div>
           )}
 
           <div>
