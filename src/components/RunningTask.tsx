@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
+import { createClient } from '@supabase/supabase-js'
 
 interface RunningTask {
   id: string
@@ -14,7 +15,11 @@ interface RunningTask {
 const RunningTask: React.FC = () => {
   const { language } = useLanguage()
   const [currentPage, setCurrentPage] = useState(1)
+  const [runningTasks, setRunningTasks] = useState<RunningTask[]>([])
+  const [totalCount, setTotalCount] = useState(0)
   const itemsPerPage = 10
+
+  const supabase = createClient('https://wsaewpnrvbdlmawpoctr.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzYWV3cG5ydmJkbG1hd3BvY3RyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjgzODMwODQsImV4cCI6MjA0Mzk1OTA4NH0.FJodJVz2pwqWYsg7PAdsHXtfuUyoMYCl7vbryGzbHv0')
 
   const translations = {
     en: {
@@ -45,20 +50,24 @@ const RunningTask: React.FC = () => {
 
   const t = translations[language]
 
-  // Mock running tasks data
-  const mockRunningTasks: RunningTask[] = Array.from({ length: 50 }, (_, i) => ({
-    id: `task-${i + 1}`,
-    status: Math.random() > 0.5 ? 'Running' : 'Completed',
-    log_message: `Log message for task ${i + 1}`,
-    type_of_task: `Task Type ${i % 5 + 1}`,
-    task_creator_name: `User ${i % 10 + 1}`,
-    input: `Input data for task ${i + 1}`,
-    create_date: new Date(Date.now() - Math.random() * 10000000000).toISOString(),
-  }))
+  useEffect(() => {
+    fetchRunningTasks()
+  }, [currentPage])
 
-  const indexOfLastItem = currentPage * itemsPerPage
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage
-  const currentItems = mockRunningTasks.slice(indexOfFirstItem, indexOfLastItem)
+  const fetchRunningTasks = async () => {
+    const { data, error, count } = await supabase
+      .from('task_manager_data')
+      .select('*', { count: 'exact' })
+      .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1)
+      .order('create_date', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching running tasks:', error)
+    } else {
+      setRunningTasks(data || [])
+      setTotalCount(count || 0)
+    }
+  }
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber)
 
@@ -80,15 +89,15 @@ const RunningTask: React.FC = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {currentItems.map((item) => (
-              <tr key={item.id}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.id}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.status}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.log_message}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.type_of_task}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.task_creator_name}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.input}</td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(item.create_date).toLocaleString()}</td>
+            {runningTasks.map((task) => (
+              <tr key={task.id}>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{task.id}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{task.status}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{task.log_message}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{task.type_of_task}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{task.task_creator_name}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{task.input}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(task.create_date).toLocaleString()}</td>
               </tr>
             ))}
           </tbody>
@@ -104,11 +113,11 @@ const RunningTask: React.FC = () => {
           {t.previous}
         </button>
         <span className="text-gray-700">
-          Page {currentPage} of {Math.ceil(mockRunningTasks.length / itemsPerPage)}
+          Page {currentPage} of {Math.ceil(totalCount / itemsPerPage)}
         </span>
         <button
           onClick={() => paginate(currentPage + 1)}
-          disabled={currentPage === Math.ceil(mockRunningTasks.length / itemsPerPage)}
+          disabled={currentPage === Math.ceil(totalCount / itemsPerPage)}
           className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-r"
         >
           {t.next}

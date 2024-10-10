@@ -1,5 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useLanguage } from '../contexts/LanguageContext'
+import { createClient } from '@supabase/supabase-js'
 
 interface ImportHistory {
   id: string
@@ -16,8 +17,11 @@ interface ImportHistory {
 
 const Import: React.FC = () => {
   const { language } = useLanguage()
+  const [importHistory, setImportHistory] = useState<ImportHistory[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const itemsPerPage = 10
+
+  const supabase = createClient('https://wsaewpnrvbdlmawpoctr.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndzYWV3cG5ydmJkbG1hd3BvY3RyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjgzODMwODQsImV4cCI6MjA0Mzk1OTA4NH0.FJodJVz2pwqWYsg7PAdsHXtfuUyoMYCl7vbryGzbHv0')
 
   const translations = {
     en: {
@@ -54,23 +58,23 @@ const Import: React.FC = () => {
 
   const t = translations[language]
 
-  // Mock import history data
-  const mockImportHistory: ImportHistory[] = Array.from({ length: 50 }, (_, i) => ({
-    id: `import-${i + 1}`,
-    path: `/path/to/import/file-${i + 1}.csv`,
-    log_message: `Import log message ${i + 1}`,
-    status: Math.random() > 0.5 ? 'Completed' : 'Failed',
-    file_type: 'CSV',
-    max_date_time: new Date(Date.now() - Math.random() * 1000000000).toISOString(),
-    min_date_time: new Date(Date.now() - Math.random() * 10000000000).toISOString(),
-    table_name: `Table_${i % 5 + 1}`,
-    import_creater_name: `User ${i % 10 + 1}`,
-    created_date: new Date(Date.now() - Math.random() * 10000000000).toISOString(),
-  }))
+  useEffect(() => {
+    fetchImportHistory()
+  }, [currentPage])
 
-  const indexOfLastItem = currentPage * itemsPerPage
-  const indexOfFirstItem = indexOfLastItem - itemsPerPage
-  const currentItems = mockImportHistory.slice(indexOfFirstItem, indexOfLastItem)
+  const fetchImportHistory = async () => {
+    const { data, error } = await supabase
+      .from('import_history')
+      .select('*')
+      .range((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage - 1)
+      .order('created_date', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching import history:', error)
+    } else {
+      setImportHistory(data || [])
+    }
+  }
 
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber)
 
@@ -95,7 +99,7 @@ const Import: React.FC = () => {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {currentItems.map((item) => (
+            {importHistory.map((item) => (
               <tr key={item.id}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.id}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{item.path}</td>
@@ -115,18 +119,17 @@ const Import: React.FC = () => {
 
       <div className="flex justify-between items-center mt-4">
         <button
-          onClick={() => paginate(currentPage - 1)}
+          onClick={() => paginate(Math.max(1, currentPage - 1))}
           disabled={currentPage === 1}
           className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l"
         >
           {t.previous}
         </button>
         <span className="text-gray-700">
-          Page {currentPage} of {Math.ceil(mockImportHistory.length / itemsPerPage)}
+          Page {currentPage}
         </span>
         <button
           onClick={() => paginate(currentPage + 1)}
-          disabled={currentPage === Math.ceil(mockImportHistory.length / itemsPerPage)}
           className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-r"
         >
           {t.next}

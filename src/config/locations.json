@@ -1,0 +1,17 @@
+{
+  "Hanoi": {
+    "Ba Dinh": ["Cong Vi", "Dien Bien", "Doi Can"],
+    "Hoan Kiem": ["Chuong Duong Do", "Cua Dong", "Dong Xuan"],
+    "Hai Ba Trung": ["Bach Dang", "Bach Khoa", "Bui Thi Xuan"]
+  },
+  "Ho Chi Minh City": {
+    "District 1": ["Ben Nghe", "Da Kao", "Cau Kho"],
+    "District 2": ["An Khanh", "An Loi Dong", "An Phu"],
+    "District 3": ["Ward 1", "Ward 2", "Ward 3"]
+  },
+  "Da Nang": {
+    "Hai Chau": ["Hai Chau I", "Hai Chau II", "Thuan Phuoc"],
+    "Son Tra": ["An Hai Bac", "An Hai Dong", "An Hai Tay"],
+    "Ngu Hanh Son": ["My An", "Khue My", "Hoa Hai"]
+  }
+}
